@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_media_app/core/services/supabase_service.dart';
+import 'package:social_media_app/core/utils/error_handler.dart';
+import 'package:social_media_app/core/widgets/responsive_wrapper.dart';
 import 'package:social_media_app/feature/profile/profile_view_model.dart';
 
 class EditBioScreen extends ConsumerStatefulWidget {
@@ -14,7 +16,6 @@ class EditBioScreen extends ConsumerStatefulWidget {
 }
 
 class _EditBioScreenState extends ConsumerState<EditBioScreen> {
-
   late TextEditingController _controller;
 
   @override
@@ -28,7 +29,7 @@ class _EditBioScreenState extends ConsumerState<EditBioScreen> {
       return;
     }
 
-    if(!mounted) return;
+    if (!mounted) return;
     Future.microtask(() {
       ref.read(profileViewModelProvider.notifier).loadProfile(userId.id);
     });
@@ -45,27 +46,48 @@ class _EditBioScreenState extends ConsumerState<EditBioScreen> {
         actions: [
           TextButton(
             onPressed: () async {
-              await state.updateProfile(bio: _controller.text.trim());
-              if(!mounted) return;
-              Navigator.pop(context, true);
+              try {
+                await state.updateProfile(bio: _controller.text.trim());
+                if (!mounted) return;
+                Navigator.pop(context, true);
+              } catch (e) {
+                if (!mounted) return;
+                AppSnackBar.showError(
+                  context,
+                  AppErrorHandler.getErrorMessage(e),
+                );
+              }
             },
-            child: const Text('Save', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Save',
+              style: TextStyle(
+                color: Colors.blueAccent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: TextField(
-          controller: _controller,
-          autofocus: true,
-          maxLines: 5,
-          maxLength: 160,
-          style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.4),
-          decoration: InputDecoration(
-            hintText: 'Describe yourself...',
-            hintStyle: TextStyle(color: Colors.grey[600]),
-            border: InputBorder.none,
-            counterStyle: TextStyle(color: Colors.grey[600]),
+      body: ResponsiveContent(
+        maxWidth: Breakpoints.maxFormWidth,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: TextField(
+            controller: _controller,
+            autofocus: true,
+            maxLines: 5,
+            maxLength: 160,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 15,
+              height: 1.4,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Describe yourself...',
+              hintStyle: TextStyle(color: Colors.grey[600]),
+              border: InputBorder.none,
+              counterStyle: TextStyle(color: Colors.grey[600]),
+            ),
           ),
         ),
       ),

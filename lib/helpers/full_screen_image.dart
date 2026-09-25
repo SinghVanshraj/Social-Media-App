@@ -44,7 +44,7 @@ class _FullScreenImageState extends State<FullScreenImage> {
         ),
         title: widget.mediaUrl.length > 1
             ? Text(
-                '${_currentIndex + 1} / ${widget.mediaUrl.length + 1}',
+                '${_currentIndex + 1} / ${widget.mediaUrl.length}',
                 style: const TextStyle(color: Colors.white, fontSize: 14),
               )
             : null,
@@ -63,10 +63,25 @@ class _FullScreenImageState extends State<FullScreenImage> {
             heroAttributes: PhotoViewHeroAttributes(
               tag: widget.mediaUrl[index],
             ),
+            errorBuilder: (context, error, stackTrace) => const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.broken_image_outlined, color: Colors.grey, size: 48),
+                  SizedBox(height: 8),
+                  Text(
+                    'Failed to load image',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
           );
         },
         loadingBuilder: (context, event) => const Center(
-          child: CircularProgressIndicator(color: Colors.blueAccent),
+          child: CircularProgressIndicator.adaptive(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.blueAccent),
+          ),
         ),
         backgroundDecoration: const BoxDecoration(color: Colors.black),
       ),

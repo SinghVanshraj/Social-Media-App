@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:social_media_app/core/services/profile_service.dart';
 import 'package:social_media_app/core/services/supabase_service.dart';
+import 'package:social_media_app/core/utils/error_handler.dart';
 import 'package:social_media_app/feature/profile/profile_model.dart';
 import 'package:social_media_app/feature/profile/profile_state.dart';
 
@@ -44,7 +45,7 @@ class ProfileViewModel extends StateNotifier<ProfileState> {
       },
       onError: (error) {
         state = state.copyWith(
-          error: error.toString(),
+          error: AppErrorHandler.getErrorMessage(error),
           user: null,
           status: ProfileStatus.error,
         );
@@ -90,7 +91,10 @@ class ProfileViewModel extends StateNotifier<ProfileState> {
       );
     } catch (e) {
       log(e.toString());
-      state = state.copyWith(status: ProfileStatus.error, error: e.toString());
+      state = state.copyWith(
+        status: ProfileStatus.error,
+        error: AppErrorHandler.getErrorMessage(e),
+      );
     }
   }
 
@@ -101,7 +105,10 @@ class ProfileViewModel extends StateNotifier<ProfileState> {
       await _service.updateProfile(avatarUrl: _url);
     } catch (e) {
       log(e.toString());
-      state = state.copyWith(status: ProfileStatus.error, error: e.toString());
+      state = state.copyWith(
+        status: ProfileStatus.error,
+        error: AppErrorHandler.getErrorMessage(e),
+      );
     }
   }
 
@@ -142,7 +149,10 @@ class ProfileViewModel extends StateNotifier<ProfileState> {
       );
     } catch (e) {
       log(e.toString());
-      state = state.copyWith(status: ProfileStatus.error, error: e.toString());
+      state = state.copyWith(
+        status: ProfileStatus.error,
+        error: AppErrorHandler.getErrorMessage(e),
+      );
     }
   }
 
@@ -174,7 +184,10 @@ class ProfileViewModel extends StateNotifier<ProfileState> {
       );
     } catch (e) {
       log(e.toString());
-      state = state.copyWith(status: ProfileStatus.error, error: e.toString());
+      state = state.copyWith(
+        status: ProfileStatus.error,
+        error: AppErrorHandler.getErrorMessage(e),
+      );
     }
   }
 
@@ -185,7 +198,10 @@ class ProfileViewModel extends StateNotifier<ProfileState> {
       state = state.copyWith(status: ProfileStatus.fetched, post: post);
     } catch (e, stackTrace) {
       log(e.toString(), stackTrace: stackTrace);
-      state = state.copyWith(status: ProfileStatus.error, error: e.toString());
+      state = state.copyWith(
+        status: ProfileStatus.error,
+        error: AppErrorHandler.getErrorMessage(e),
+      );
     }
   }
 

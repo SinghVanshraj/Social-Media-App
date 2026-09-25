@@ -1,6 +1,10 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_media_app/core/services/supabase_service.dart';
+import 'package:social_media_app/core/utils/error_handler.dart';
+import 'package:social_media_app/core/widgets/responsive_wrapper.dart';
 import 'package:social_media_app/feature/profile/profile_view_model.dart';
 
 class EditNameScreen extends ConsumerStatefulWidget {
@@ -12,7 +16,6 @@ class EditNameScreen extends ConsumerStatefulWidget {
 }
 
 class _EditNameScreenState extends ConsumerState<EditNameScreen> {
-
   late TextEditingController _controller;
 
   @override
@@ -26,7 +29,7 @@ class _EditNameScreenState extends ConsumerState<EditNameScreen> {
       return;
     }
 
-    if(!mounted) return;
+    if (!mounted) return;
     Future.microtask(() {
       ref.read(profileViewModelProvider.notifier).loadProfile(userId.id);
     });
@@ -43,25 +46,46 @@ class _EditNameScreenState extends ConsumerState<EditNameScreen> {
         actions: [
           TextButton(
             onPressed: () async {
-              state.updateProfile(fullname: _controller.text.trim());
-              if(!mounted) return;
-              Navigator.pop(context, true);
+              try {
+                await state.updateProfile(fullname: _controller.text.trim());
+                if (!mounted) return;
+                Navigator.pop(context, true);
+              } catch (e) {
+                if (!mounted) return;
+                AppSnackBar.showError(
+                  context,
+                  AppErrorHandler.getErrorMessage(e),
+                );
+              }
             },
-            child: const Text('Save', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Save',
+              style: TextStyle(
+                color: Colors.blueAccent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: TextField(
-          controller: _controller,
-          autofocus: true,
-          style: const TextStyle(color: Colors.white, fontSize: 16),
-          decoration: InputDecoration(
-            labelText: 'Name',
-            labelStyle: TextStyle(color: Colors.grey[500]),
-            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.grey[800]!)),
-            focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: Colors.blueAccent)),
+      body: ResponsiveContent(
+        maxWidth: Breakpoints.maxFormWidth,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: TextField(
+            controller: _controller,
+            autofocus: true,
+            style: const TextStyle(color: Colors.white, fontSize: 16),
+            decoration: InputDecoration(
+              labelText: 'Name',
+              labelStyle: TextStyle(color: Colors.grey[500]),
+              enabledBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey[800]!),
+              ),
+              focusedBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.blueAccent),
+              ),
+            ),
           ),
         ),
       ),

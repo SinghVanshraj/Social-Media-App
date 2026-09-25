@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:social_media_app/core/widgets/error_offline_widgets.dart';
 import 'package:social_media_app/feature/auth/auth_view.dart';
 import 'package:social_media_app/feature/comments/comments_view.dart';
 import 'package:social_media_app/feature/create_post/create_post_view.dart';
@@ -16,8 +17,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Supabase.initialize(
-    url: 'https://xyzcompany.supabase.co',
-    publishableKey: 'your-publishable-key',
+    url: 'SUPABASE_URL',
+    publishableKey: 'PUBLISHABLE_KEY',
   );
   runApp(ProviderScope(child: const MyApp()));
 }
@@ -30,10 +31,19 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Spark',
       debugShowCheckedModeBanner: false,
-
+      builder: (context, child) {
+        return Overlay(
+          initialEntries: [
+            OverlayEntry(
+              builder: (context) =>
+                  OfflineBanner(child: child ?? const SizedBox.shrink()),
+            ),
+          ],
+        );
+      },
       theme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: Colors.black,
+        scaffoldBackgroundColor: Colors.black, 
         primaryColor: Colors.blueAccent[400],
 
         appBarTheme: const AppBarTheme(
@@ -102,128 +112,186 @@ class _MainNavigationShellState extends ConsumerState<MainNavigationShell> {
   Widget build(BuildContext context) {
     final unreadCount = ref.watch(notificationsViewModelProvider).unreadCount;
 
-    return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: _pages),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: Color(0xFF16181C), width: 0.5)),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: (index) => setState(() => _selectedIndex = index),
-          backgroundColor: Colors.black,
-          type: BottomNavigationBarType.fixed,
-          showSelectedLabels: false,
-          showUnselectedLabels: false,
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.grey[600],
-          elevation: 0,
-          items: [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined, size: 26),
-              activeIcon: Icon(
-                Icons.home_filled,
-                size: 26,
-                color: Colors.white,
-              ),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.search_rounded, size: 26),
-              activeIcon: Icon(
-                Icons.search_rounded,
-                size: 26,
-                color: Colors.white,
-              ),
-              label: 'Search',
-            ),
-            BottomNavigationBarItem(
-              icon: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const Icon(Icons.notifications_outlined, size: 26),
-                  if (unreadCount > 0)
-                    Positioned(
-                      right: -8,
-                      top: -8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 5,
-                          vertical: 2,
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 18,
-                          minHeight: 18,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          unreadCount > 99 ? '99+' : '$unreadCount',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWideScreen = constraints.maxWidth >= 720;
+
+        if (isWideScreen) {
+          return Scaffold(
+            backgroundColor: Colors.black,
+            body: Row(
+              children: [
+                NavigationRail(
+                  selectedIndex: _selectedIndex,
+                  onDestinationSelected: (index) =>
+                      setState(() => _selectedIndex = index),
+                  backgroundColor: Colors.black,
+                  labelType: NavigationRailLabelType.none,
+                  leading: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Text(
+                      'Spark',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 22,
+                        letterSpacing: -0.5,
                       ),
                     ),
-                ],
-              ),
-              activeIcon: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const Icon(
-                    Icons.notifications_rounded,
+                  ),
+                  destinations: [
+                    const NavigationRailDestination(
+                      icon: Icon(Icons.home_outlined, size: 26),
+                      selectedIcon: Icon(
+                        Icons.home_filled,
+                        size: 26,
+                        color: Colors.white,
+                      ),
+                      label: Text('Home'),
+                    ),
+                    const NavigationRailDestination(
+                      icon: Icon(Icons.search_rounded, size: 26),
+                      selectedIcon: Icon(
+                        Icons.search_rounded,
+                        size: 26,
+                        color: Colors.white,
+                      ),
+                      label: Text('Search'),
+                    ),
+                    NavigationRailDestination(
+                      icon: _buildBadgeIcon(
+                        Icons.notifications_outlined,
+                        unreadCount,
+                        Colors.grey[400]!,
+                      ),
+                      selectedIcon: _buildBadgeIcon(
+                        Icons.notifications_rounded,
+                        unreadCount,
+                        Colors.white,
+                      ),
+                      label: const Text('Alerts'),
+                    ),
+                    const NavigationRailDestination(
+                      icon: Icon(Icons.person_outline_rounded, size: 26),
+                      selectedIcon: Icon(
+                        Icons.person_rounded,
+                        size: 26,
+                        color: Colors.white,
+                      ),
+                      label: Text('Profile'),
+                    ),
+                  ],
+                ),
+                const VerticalDivider(
+                  width: 1,
+                  thickness: 1,
+                  color: Color(0xFF16181C),
+                ),
+                Expanded(
+                  child: IndexedStack(
+                    index: _selectedIndex,
+                    children: _pages,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Scaffold(
+          body: IndexedStack(index: _selectedIndex, children: _pages),
+          bottomNavigationBar: Container(
+            decoration: const BoxDecoration(
+              border:
+                  Border(top: BorderSide(color: Color(0xFF16181C), width: 0.5)),
+            ),
+            child: BottomNavigationBar(
+              currentIndex: _selectedIndex,
+              onTap: (index) => setState(() => _selectedIndex = index),
+              backgroundColor: Colors.black,
+              type: BottomNavigationBarType.fixed,
+              showSelectedLabels: false,
+              showUnselectedLabels: false,
+              selectedItemColor: Colors.white,
+              unselectedItemColor: Colors.grey[600],
+              elevation: 0,
+              items: [
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.home_outlined, size: 26),
+                  activeIcon: Icon(
+                    Icons.home_filled,
                     size: 26,
                     color: Colors.white,
                   ),
-                  if (unreadCount > 0)
-                    Positioned(
-                      right: -8,
-                      top: -8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 5,
-                          vertical: 2,
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 18,
-                          minHeight: 18,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          unreadCount > 99 ? '99+' : '$unreadCount',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              label: 'Alerts',
+                  label: 'Home',
+                ),
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.search_rounded, size: 26),
+                  activeIcon: Icon(
+                    Icons.search_rounded,
+                    size: 26,
+                    color: Colors.white,
+                  ),
+                  label: 'Search',
+                ),
+                BottomNavigationBarItem(
+                  icon: _buildBadgeIcon(
+                    Icons.notifications_outlined,
+                    unreadCount,
+                    Colors.grey[600]!,
+                  ),
+                  activeIcon: _buildBadgeIcon(
+                    Icons.notifications_rounded,
+                    unreadCount,
+                    Colors.white,
+                  ),
+                  label: 'Alerts',
+                ),
+                const BottomNavigationBarItem(
+                  icon: Icon(Icons.person_outline_rounded, size: 26),
+                  activeIcon: Icon(
+                    Icons.person_rounded,
+                    size: 26,
+                    color: Colors.white,
+                  ),
+                  label: 'Profile',
+                ),
+              ],
             ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline_rounded, size: 26),
-              activeIcon: Icon(
-                Icons.person_rounded,
-                size: 26,
-                color: Colors.white,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildBadgeIcon(IconData icon, int count, Color color) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(icon, size: 26, color: color),
+        if (count > 0)
+          Positioned(
+            right: -8,
+            top: -8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+              decoration: BoxDecoration(
+                color: Colors.red,
+                borderRadius: BorderRadius.circular(10),
               ),
-              label: 'Profile',
+              child: Text(
+                count > 99 ? '99+' : '$count',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
-          ],
-        ),
-      ),
+          ),
+      ],
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:social_media_app/core/services/comment_service.dart';
+import 'package:social_media_app/core/utils/error_handler.dart';
 import 'package:social_media_app/feature/comments/comments_model.dart';
 import 'package:social_media_app/feature/comments/comments_state.dart';
 
@@ -36,7 +37,10 @@ class CommentsViewModel extends StateNotifier<CommentsState> {
         commentsList: commentsWithReplies,
       );
     } catch (e) {
-      state = state.copyWith(status: CommentsStatus.error, error: e.toString());
+      state = state.copyWith(
+        status: CommentsStatus.error,
+        error: AppErrorHandler.getErrorMessage(e),
+      );
     }
   }
 
@@ -59,7 +63,10 @@ class CommentsViewModel extends StateNotifier<CommentsState> {
       }).toList();
       state = state.copyWith(commentsList: updateList);
     } catch (e) {
-      state = state.copyWith(status: CommentsStatus.error, error: e.toString());
+      state = state.copyWith(
+        status: CommentsStatus.error,
+        error: AppErrorHandler.getErrorMessage(e),
+      );
     }
   }
 
@@ -70,13 +77,16 @@ class CommentsViewModel extends StateNotifier<CommentsState> {
     state = state.copyWith(status: CommentsStatus.loading);
     try {
       await _service.addComment(postId: postId, content: content);
-      final comments =  await _service.fetchComments(postId);
+      final comments = await _service.fetchComments(postId);
       state = state.copyWith(
-      status: CommentsStatus.fetched,
-      commentsList: comments,
-    );
+        status: CommentsStatus.fetched,
+        commentsList: comments,
+      );
     } catch (e) {
-      state = state.copyWith(status: CommentsStatus.error, error: e.toString());
+      state = state.copyWith(
+        status: CommentsStatus.error,
+        error: AppErrorHandler.getErrorMessage(e),
+      );
     }
   }
 
@@ -94,10 +104,13 @@ class CommentsViewModel extends StateNotifier<CommentsState> {
       );
       await fetchReplies(parentCommentId);
       state = state.copyWith(
-      status: CommentsStatus.fetched,
-    );
+        status: CommentsStatus.fetched,
+      );
     } catch (e) {
-      state = state.copyWith(status: CommentsStatus.error, error: e.toString());
+      state = state.copyWith(
+        status: CommentsStatus.error,
+        error: AppErrorHandler.getErrorMessage(e),
+      );
     }
   }
 
@@ -117,7 +130,10 @@ class CommentsViewModel extends StateNotifier<CommentsState> {
         commentsList: updateList,
       );
     } catch (e) {
-      state = state.copyWith(status: CommentsStatus.error, error: e.toString());
+      state = state.copyWith(
+        status: CommentsStatus.error,
+        error: AppErrorHandler.getErrorMessage(e),
+      );
     }
   }
 }

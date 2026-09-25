@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:social_media_app/core/services/supabase_auth.dart';
+import 'package:social_media_app/core/utils/error_handler.dart';
 import 'package:social_media_app/feature/auth/auth_model.dart';
 import 'package:social_media_app/feature/auth/auth_state.dart';
 
@@ -45,7 +46,10 @@ class AuthViewModel extends StateNotifier<AuthState> {
         );
       },
       onError: (e) {
-        state = state.copyWith(status: AuthStatus.error, error: e.toString());
+        state = state.copyWith(
+          status: AuthStatus.error,
+          error: AppErrorHandler.getErrorMessage(e),
+        );
       },
     );
   }
@@ -55,7 +59,10 @@ class AuthViewModel extends StateNotifier<AuthState> {
     try {
       await _auth.signIn(email, password);
     } catch (e) {
-      state = state.copyWith(status: AuthStatus.error, error: e.toString());
+      state = state.copyWith(
+        status: AuthStatus.error,
+        error: AppErrorHandler.getErrorMessage(e),
+      );
     }
   }
 
@@ -64,7 +71,10 @@ class AuthViewModel extends StateNotifier<AuthState> {
     try {
       await _auth.signUp(email, password, fullname);
     } catch (e) {
-      state = state.copyWith(status: AuthStatus.error, error: e.toString());
+      state = state.copyWith(
+        status: AuthStatus.error,
+        error: AppErrorHandler.getErrorMessage(e),
+      );
     }
   }
 
@@ -74,7 +84,10 @@ class AuthViewModel extends StateNotifier<AuthState> {
       await _auth.forgetPassword(email);
       state = state.copyWith(status: AuthStatus.unauthenticated, error: null);
     } catch (e) {
-      state = state.copyWith(status: AuthStatus.error, error: e.toString());
+      state = state.copyWith(
+        status: AuthStatus.error,
+        error: AppErrorHandler.getErrorMessage(e),
+      );
     }
   }
 
@@ -83,7 +96,10 @@ class AuthViewModel extends StateNotifier<AuthState> {
     try {
       await _auth.signOut();
     } catch (e) {
-      state = state.copyWith(status: AuthStatus.error, error: e.toString());
+      state = state.copyWith(
+        status: AuthStatus.error,
+        error: AppErrorHandler.getErrorMessage(e),
+      );
     }
   }
 

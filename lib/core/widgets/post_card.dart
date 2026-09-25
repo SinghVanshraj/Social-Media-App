@@ -50,24 +50,29 @@ class _PostCardState extends ConsumerState<PostCard> {
                       : null,
                 ),
                 const SizedBox(width: 10),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      post.name ?? 'Unknown',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        post.name ?? 'Unknown',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    Text(
-                      '@${post.username ?? ''}',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                    ),
-                  ],
+                      Text(
+                        '@${post.username ?? ''}',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
                 ),
-                const Spacer(),
                 IconButton(
                   icon: Icon(Icons.more_horiz, color: Colors.grey[600]),
                   onPressed: () {},
@@ -125,12 +130,7 @@ class _PostCardState extends ConsumerState<PostCard> {
               const SizedBox(width: 20),
 
               GestureDetector(
-                onTap: () => showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => CommentsView(postId: post.id),
-                ),
+                onTap: () => CommentsView.show(context, post.id),
                 child: Row(
                   children: [
                     const Icon(
@@ -213,8 +213,8 @@ class __PostImagesState extends State<_PostImages> {
         MaterialPageRoute(builder: (_) => FullScreenVideoPlayer(mediaUrl: url)),
       );
     } else {
-      final imageUrls = widget.mediaUrl.where((n) => !_isVideo(url)).toList();
-      final imageUrl = imageUrls.indexOf(url).clamp(0, imageUrls.length - 1);
+      final imageUrls = widget.mediaUrl.where((n) => !_isVideo(n)).toList();
+      final imageUrl = imageUrls.indexOf(url).clamp(0, imageUrls.isNotEmpty ? imageUrls.length - 1 : 0);
       Navigator.push(
         context,
         MaterialPageRoute(

@@ -1,8 +1,10 @@
-// ignore_for_file: no_leading_underscores_for_local_identifiers, use_build_context_synchronously, prefer_final_fields
+// ignore_for_file: unnecessary_underscores, prefer_final_fields, no_leading_underscores_for_local_identifiers, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_media_app/core/services/supabase_service.dart';
+import 'package:social_media_app/core/widgets/error_offline_widgets.dart';
+import 'package:social_media_app/core/widgets/responsive_wrapper.dart';
 import 'package:social_media_app/feature/auth/auth_view_model.dart';
 import 'package:social_media_app/feature/profile/profile_view_model.dart';
 import 'package:social_media_app/helpers/full_one_post.dart';
@@ -84,12 +86,32 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
     final state = ref.watch(profileViewModelProvider);
     final stateAuth = ref.watch(authViewModelProvider.notifier);
     if (state.isFetching && state.user == null) {
-      return Scaffold(
+      return const Scaffold(
+        backgroundColor: Colors.black,
         body: Center(child: CircularProgressIndicator.adaptive()),
       );
     }
     if (state.user == null) {
-      return Scaffold(body: Center(child: Text("Profile not found")));
+      return Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          leading: Navigator.canPop(context)
+              ? const BackButton(color: Colors.white)
+              : null,
+          title: const Text(
+            'Profile',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+        ),
+        body: ResponsiveContent(
+          maxWidth: Breakpoints.maxProfileWidth,
+          child: AppErrorView(
+            error: state.error ?? 'Profile not found',
+            onRetry: _refreshProfile,
+          ),
+        ),
+      );
     }
     final _user = state.user!;
     final _post = state.post ?? [];
@@ -126,10 +148,12 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
           ),
         ],
       ),
-      body: DefaultTabController(
-        length: 2,
-        child: NestedScrollView(
-          physics: const ClampingScrollPhysics(),
+      body: ResponsiveContent(
+        maxWidth: Breakpoints.maxProfileWidth,
+        child: DefaultTabController(
+          length: 2,
+          child: NestedScrollView(
+            physics: const ClampingScrollPhysics(),
           headerSliverBuilder: (context, innerBoxIsScrolled) => [
             SliverToBoxAdapter(
               child: Padding(
@@ -215,7 +239,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
                           }
                         },
                         style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 38),
+                          minimumSize: const Size.fromHeight(38),
                           side: BorderSide(color: Colors.grey[900]!),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -245,7 +269,7 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
                                 foregroundColor: state.isFollowing
                                     ? Colors.white
                                     : Colors.black,
-                                minimumSize: const Size(double.infinity, 38),
+                                minimumSize: const Size.fromHeight(38),
                                 side: state.isFollowing
                                     ? BorderSide(color: Colors.grey[700]!)
                                     : BorderSide.none,
@@ -333,209 +357,306 @@ class _ProfileViewState extends ConsumerState<ProfileView> {
           ],
           body: TabBarView(
             children: [
-              ListView.separated(
-                padding: const EdgeInsets.only(top: 8),
-                itemCount: _post.length,
-                separatorBuilder: (context, index) =>
-                    Divider(color: Colors.grey[900], height: 1),
-                itemBuilder: (context, index) {
-                  final post = _post[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => FullOnePost(post: post),
+              _post.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.grid_off_rounded,
+                              size: 44,
+                              color: Colors.grey[700],
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'No posts yet',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'When posts are published, they will appear here.',
+                              style: TextStyle(
+                                color: Colors.grey[500],
+                                fontSize: 13,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.only(top: 8),
+                      itemCount: _post.length,
+                      separatorBuilder: (context, index) =>
+                          Divider(color: Colors.grey[900], height: 1),
+                      itemBuilder: (context, index) {
+                        final post = _post[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
                           ),
-                        );
-                      },
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CircleAvatar(
-                            radius: 18,
-                            backgroundColor: Colors.grey[900],
-                            backgroundImage:
-                                _user.avatarUrl?.trim().isNotEmpty == true
-                                ? NetworkImage(_user.avatarUrl!.trim())
-                                : null,
-                            child: _user.avatarUrl?.trim().isNotEmpty != true
-                                ? const Icon(
-                                    Icons.person,
-                                    color: Colors.grey,
-                                    size: 40,
-                                  )
-                                : null,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => FullOnePost(post: post),
+                                ),
+                              );
+                            },
+                            child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    Text(
-                                      _user.fullName ?? "",
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      _user.username ?? "",
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ],
+                                CircleAvatar(
+                                  radius: 18,
+                                  backgroundColor: Colors.grey[900],
+                                  backgroundImage:
+                                      _user.avatarUrl?.trim().isNotEmpty == true
+                                      ? NetworkImage(_user.avatarUrl!.trim())
+                                      : null,
+                                  child: _user.avatarUrl?.trim().isNotEmpty !=
+                                          true
+                                      ? const Icon(
+                                          Icons.person,
+                                          color: Colors.grey,
+                                          size: 40,
+                                        )
+                                      : null,
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  post.caption ?? "No caption, only media",
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Color(0xFFE7E9EA),
-                                    fontSize: 14,
-                                    height: 1.3,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Flexible(
+                                            child: Text(
+                                              _user.fullName ?? "",
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Flexible(
+                                            child: Text(
+                                              _user.username ?? "",
+                                              style: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontSize: 13,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        post.caption ?? "No caption, only media",
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Color(0xFFE7E9EA),
+                                          fontSize: 14,
+                                          height: 1.3,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-              ListView.separated(
-                padding: const EdgeInsets.only(top: 8, bottom: 24),
-                physics: const AlwaysScrollableScrollPhysics(),
-                itemCount: _reply.length,
-                separatorBuilder: (context, index) =>
-                    Divider(color: Colors.grey[900], height: 1),
-                itemBuilder: (context, index) {
-                  final reply = _reply[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+              _reply.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
-                              Icons.turn_right_rounded,
-                              size: 16,
-                              color: Colors.grey[600],
+                              Icons.chat_bubble_outline_rounded,
+                              size: 44,
+                              color: Colors.grey[700],
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Replying to ',
+                            const SizedBox(height: 12),
+                            const Text(
+                              'No replies yet',
                               style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 13,
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
+                            const SizedBox(height: 4),
                             Text(
-                              reply.actorName ?? "",
-                              style: const TextStyle(
-                                color: Colors.blueAccent,
+                              'Replies will appear here.',
+                              style: TextStyle(
+                                color: Colors.grey[500],
                                 fontSize: 13,
-                                fontWeight: FontWeight.w500,
                               ),
+                              textAlign: TextAlign.center,
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CircleAvatar(
-                              radius: 18,
-                              backgroundColor: Colors.grey[900],
-                              backgroundImage:
-                                  _user.avatarUrl?.trim().isNotEmpty == true
-                                  ? NetworkImage(_user.avatarUrl!.trim())
-                                  : null,
-                              child: _user.avatarUrl?.trim().isNotEmpty != true
-                                  ? const Icon(
-                                      Icons.person,
-                                      color: Colors.grey,
-                                      size: 20,
-                                    )
-                                  : null,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.only(top: 8, bottom: 24),
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      itemCount: _reply.length,
+                      separatorBuilder: (context, index) =>
+                          Divider(color: Colors.grey[900], height: 1),
+                      itemBuilder: (context, index) {
+                        final reply = _reply[index];
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
                                 children: [
-                                  Row(
-                                    children: [
-                                      Text(
-                                        _user.fullName ?? "",
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        _user.username ?? "",
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                      const Spacer(),
-                                      Text(
-                                        reply.timeAgo,
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
+                                  Icon(
+                                    Icons.turn_right_rounded,
+                                    size: 16,
+                                    color: Colors.grey[600],
                                   ),
-                                  const SizedBox(height: 4),
+                                  const SizedBox(width: 6),
                                   Text(
-                                    reply.content,
-                                    style: const TextStyle(
-                                      color: Color(0xFFE7E9EA),
-                                      fontSize: 14,
-                                      height: 1.35,
+                                    'Replying to ',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  Flexible(
+                                    child: Text(
+                                      reply.actorName ?? "",
+                                      style: const TextStyle(
+                                        color: Colors.blueAccent,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
+                              const SizedBox(height: 8),
+
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 18,
+                                    backgroundColor: Colors.grey[900],
+                                    backgroundImage:
+                                        _user.avatarUrl?.trim().isNotEmpty ==
+                                                true
+                                            ? NetworkImage(
+                                                _user.avatarUrl!.trim(),
+                                              )
+                                            : null,
+                                    child:
+                                        _user.avatarUrl?.trim().isNotEmpty !=
+                                                true
+                                            ? const Icon(
+                                                Icons.person,
+                                                color: Colors.grey,
+                                                size: 20,
+                                              )
+                                            : null,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Flexible(
+                                              child: Text(
+                                                _user.fullName ?? "",
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Flexible(
+                                              child: Text(
+                                                _user.username ?? "",
+                                                style: TextStyle(
+                                                  color: Colors.grey[600],
+                                                  fontSize: 13,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              reply.timeAgo,
+                                              style: TextStyle(
+                                                color: Colors.grey[600],
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          reply.content,
+                                          style: const TextStyle(
+                                            color: Color(0xFFE7E9EA),
+                                            fontSize: 14,
+                                            height: 1.35,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
             ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _statItem(String count, String label) {
     return Column(

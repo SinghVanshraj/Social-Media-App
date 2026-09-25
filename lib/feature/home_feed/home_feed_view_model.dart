@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:social_media_app/core/services/post_service.dart';
+import 'package:social_media_app/core/utils/error_handler.dart';
 import 'package:social_media_app/feature/home_feed/home_feed_model.dart';
 import 'package:social_media_app/feature/home_feed/home_feed_state.dart';
 
@@ -31,7 +32,10 @@ class HomeFeedViewModel extends StateNotifier<HomeFeedState> {
       );
     } catch (e) {
       log(e.toString());
-      state = state.copyWith(status: HomeFeedStatus.error, error: e.toString());
+      state = state.copyWith(
+        status: HomeFeedStatus.error,
+        error: AppErrorHandler.getErrorMessage(e),
+      );
     }
   }
 

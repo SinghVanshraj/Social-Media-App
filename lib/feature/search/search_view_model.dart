@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:social_media_app/core/services/search_service.dart';
+import 'package:social_media_app/core/utils/error_handler.dart';
 import 'package:social_media_app/feature/home_feed/home_feed_model.dart';
 import 'package:social_media_app/feature/profile/profile_model.dart';
 import 'package:social_media_app/feature/search/search_state.dart';
@@ -43,7 +44,10 @@ class SearchViewModel extends StateNotifier<SearchState> {
         error: null,
       );
     } catch (e) {
-      state = state.copyWith(status: SearchStatus.error, error: e.toString());
+      state = state.copyWith(
+        status: SearchStatus.error,
+        error: AppErrorHandler.getErrorMessage(e),
+      );
     }
   }
 

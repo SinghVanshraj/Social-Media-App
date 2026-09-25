@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:social_media_app/core/services/camera_service.dart';
+import 'package:social_media_app/core/utils/error_handler.dart';
+import 'package:social_media_app/core/widgets/responsive_wrapper.dart';
 import 'package:social_media_app/feature/profile/profile_view_model.dart';
 
 class ProfileSetupView extends ConsumerStatefulWidget {
@@ -27,51 +29,56 @@ class _ProfileSetupViewState extends ConsumerState<ProfileSetupView> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (_) => Column(
-        mainAxisSize: .min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.camera_alt, color: Colors.white),
-            title: const Text(
-              'Take a photo',
-              style: TextStyle(color: Colors.white),
-            ),
-            onTap: () async {
-              Navigator.pop(context);
+      builder: (_) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: Breakpoints.maxModalWidth),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.white),
+                title: const Text(
+                  'Take a photo',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
 
-              final path = await ref
-                  .read(mediaPickerServiceProvider)
-                  .pickImageFromCamera();
+                  final path = await ref
+                      .read(mediaPickerServiceProvider)
+                      .pickImageFromCamera();
 
-              if (path != null) {
-                setState(() {
-                  _localImagePath = path;
-                });
-              }
-            },
+                  if (path != null) {
+                    setState(() {
+                      _localImagePath = path;
+                    });
+                  }
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.white),
+                title: const Text(
+                  'Choose from gallery',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
+
+                  final path = await ref
+                      .read(mediaPickerServiceProvider)
+                      .pickImageFromGallery();
+
+                  if (path != null) {
+                    setState(() {
+                      _localImagePath = path;
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
           ),
-          ListTile(
-            leading: const Icon(Icons.photo_library, color: Colors.white),
-            title: const Text(
-              'Choose from gallery',
-              style: TextStyle(color: Colors.white),
-            ),
-            onTap: () async {
-              Navigator.pop(context);
-
-              final path = await ref
-                  .read(mediaPickerServiceProvider)
-                  .pickImageFromGallery();
-
-              if (path != null) {
-                setState(() {
-                  _localImagePath = path;
-                });
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-        ],
+        ),
       ),
     );
   }
@@ -129,13 +136,19 @@ class _ProfileSetupViewState extends ConsumerState<ProfileSetupView> {
 
       if (mounted) Navigator.pushReplacementNamed(context, '/');
     } catch (e) {
+      final errorMsg = AppErrorHandler.getErrorMessage(e);
       setState(() {
-        _usernameError = e.toString();
+        _usernameError = errorMsg;
       });
+      if (mounted) {
+        AppSnackBar.showError(context, errorMsg);
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -146,8 +159,7 @@ class _ProfileSetupViewState extends ConsumerState<ProfileSetupView> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        automaticallyImplyLeading:
-            false,
+        automaticallyImplyLeading: false,
         actions: [
           TextButton(
             onPressed: () =>
@@ -165,13 +177,15 @@ class _ProfileSetupViewState extends ConsumerState<ProfileSetupView> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: CustomScrollView(
-            slivers: [
-              SliverFillRemaining(
-                hasScrollBody: false,
+      body: ResponsiveContent(
+        maxWidth: Breakpoints.maxFormWidth,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: CustomScrollView(
+              slivers: [
+                SliverFillRemaining(
+                  hasScrollBody: false,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -327,7 +341,7 @@ class _ProfileSetupViewState extends ConsumerState<ProfileSetupView> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.black,
-                          minimumSize: const Size(double.infinity, 50),
+                          minimumSize: const Size.fromHeight(50),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(25),
                           ),
@@ -358,8 +372,9 @@ class _ProfileSetupViewState extends ConsumerState<ProfileSetupView> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildLabel(String label) {
     return Padding(

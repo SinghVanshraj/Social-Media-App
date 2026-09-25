@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:social_media_app/core/services/supabase_service.dart';
+import 'package:social_media_app/core/widgets/error_offline_widgets.dart';
+import 'package:social_media_app/core/widgets/responsive_wrapper.dart';
 import 'package:social_media_app/feature/profile/profile_view_model.dart';
 import 'package:social_media_app/helpers/profile/edit_avatar_screen.dart';
 import 'package:social_media_app/helpers/profile/edit_bio_screen.dart';
@@ -57,12 +59,37 @@ class _EditProfileHelperState extends ConsumerState<EditProfileHelper> {
   Widget build(BuildContext context) {
     final state = ref.watch(profileViewModelProvider);
     if (state.isFetching) {
-      return Scaffold(
+      return const Scaffold(
+        backgroundColor: Colors.black,
         body: Center(child: CircularProgressIndicator.adaptive()),
       );
     }
     if (state.user == null) {
-      return Scaffold(body: Center(child: Text("Profile not found")));
+      return Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          leading: IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text('Edit profile'),
+        ),
+        body: ResponsiveContent(
+          maxWidth: Breakpoints.maxProfileWidth,
+          child: AppErrorView(
+            error: state.error ?? 'Profile not found',
+            onRetry: () {
+              final userId = SupabaseService.auth.currentUser;
+              if (userId != null) {
+                ref
+                    .read(profileViewModelProvider.notifier)
+                    .loadProfile(userId.id);
+              }
+            },
+          ),
+        ),
+      );
     }
     final _user = state.user!;
     return Scaffold(
@@ -100,7 +127,9 @@ class _EditProfileHelperState extends ConsumerState<EditProfileHelper> {
           child: Divider(color: Colors.grey[900], height: 1),
         ),
       ),
-      body: ListView(
+      body: ResponsiveContent(
+        maxWidth: Breakpoints.maxProfileWidth,
+        child: ListView(
         children: [
           const SizedBox(height: 20),
           Center(
@@ -197,8 +226,9 @@ class _EditProfileHelperState extends ConsumerState<EditProfileHelper> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildEditTile({
     required String label,

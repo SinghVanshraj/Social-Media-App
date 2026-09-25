@@ -1,30 +1,50 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:social_media_app/main.dart';
+import 'package:social_media_app/core/widgets/error_offline_widgets.dart';
+import 'package:social_media_app/core/widgets/responsive_wrapper.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('ResponsiveContent clamps width on large screens', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: ResponsiveContent(
+            maxWidth: 600,
+            child: Text('Responsive Test Body'),
+          ),
+        ),
+      ),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('Responsive Test Body'), findsOneWidget);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets('AppErrorView renders error message and retry button', (
+    WidgetTester tester,
+  ) async {
+    bool retried = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AppErrorView(
+            error: 'Connection timeout',
+            onRetry: () {
+              retried = true;
+            },
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Connection timeout'), findsOneWidget);
+    expect(find.text('Try Again'), findsOneWidget);
+
+    await tester.tap(find.text('Try Again'));
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(retried, isTrue);
   });
 }

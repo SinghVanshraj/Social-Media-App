@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:social_media_app/core/services/notification_service.dart';
+import 'package:social_media_app/core/utils/error_handler.dart';
 import 'package:social_media_app/feature/notifications/notifications_state.dart';
 
 final notificationsViewModelProvider =
@@ -39,7 +40,7 @@ class NotificationsViewModel extends StateNotifier<NotificationsState> {
     } catch (e) {
       state = state.copyWith(
         status: NotificationStatus.error,
-        error: e.toString(),
+        error: AppErrorHandler.getErrorMessage(e),
       );
     }
   }

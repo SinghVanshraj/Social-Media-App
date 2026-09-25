@@ -3,6 +3,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:social_media_app/core/utils/error_handler.dart';
+import 'package:social_media_app/core/widgets/error_offline_widgets.dart';
+import 'package:social_media_app/core/widgets/responsive_wrapper.dart';
 import 'package:social_media_app/feature/comments/comments_model.dart';
 import 'package:social_media_app/feature/comments/comments_state.dart';
 import 'package:social_media_app/feature/comments/comments_view_model.dart';
@@ -69,19 +72,25 @@ class _CommentsViewState extends ConsumerState<CommentsView> {
 
     _commentController.clear();
 
-    if (_replyToId != null) {
-      await ref
-          .read(commentViewModelProvider.notifier)
-          .addReply(
-            postId: widget.postId,
-            parentCommentId: _replyToId!,
-            content: content,
-          );
-      _cancelReply();
-    } else {
-      await ref
-          .read(commentViewModelProvider.notifier)
-          .addComment(postId: widget.postId, content: content);
+    try {
+      if (_replyToId != null) {
+        await ref
+            .read(commentViewModelProvider.notifier)
+            .addReply(
+              postId: widget.postId,
+              parentCommentId: _replyToId!,
+              content: content,
+            );
+        _cancelReply();
+      } else {
+        await ref
+            .read(commentViewModelProvider.notifier)
+            .addComment(postId: widget.postId, content: content);
+      }
+    } catch (e) {
+      if (mounted) {
+        AppSnackBar.showError(context, e);
+      }
     }
   }
 
@@ -99,149 +108,173 @@ class _CommentsViewState extends ConsumerState<CommentsView> {
     final state = ref.watch(commentViewModelProvider);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      decoration: const BoxDecoration(
-        color: Color(0xFF121212),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Padding(
-        padding: EdgeInsets.only(bottom: bottomInset),
-        child: Column(
-          children: [
-            const SizedBox(height: 10),
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[700],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Comments',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Divider(color: Colors.grey[900], height: 1),
+    ref.listen<CommentsState>(commentViewModelProvider, (prev, next) {
+      if (next.status == CommentsStatus.error &&
+          next.commentsList.isNotEmpty &&
+          next.error != null) {
+        AppSnackBar.showError(context, next.error);
+      }
+    });
 
-            Expanded(child: _buildBody(state)),
-
-            if (_replyToId != null)
+    return ResponsiveContent(
+      maxWidth: Breakpoints.maxModalWidth,
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: const BoxDecoration(
+          color: Color(0xFF121212),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Padding(
+          padding: EdgeInsets.only(bottom: bottomInset),
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                color: const Color(0xFF1E1E1E),
-                child: Row(
-                  children: [
-                    Text(
-                      "Replying to $_replyToName",
-                      style: const TextStyle(
-                        color: Colors.blueAccent,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: _cancelReply,
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.grey,
-                        size: 16,
-                      ),
-                    ),
-                  ],
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[700],
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-
-            SafeArea(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF181818),
-                  border: Border(top: BorderSide(color: Colors.grey[900]!)),
+              const SizedBox(height: 12),
+              const Text(
+                'Comments',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
-                child: Row(
-                  children: [
-                    Consumer(
-                      builder: (context, ref, _) {
-                        final profile = ref.watch(profileViewModelProvider).user;
-                        final avatarProvider = _getAvatarProvider(profile?.avatarUrl);
+              ),
+              const SizedBox(height: 8),
+              Divider(color: Colors.grey[900], height: 1),
 
-                        return CircleAvatar(
-                          radius: 16,
-                          backgroundColor: const Color(0xFF262626),
-                          backgroundImage: avatarProvider,
-                          child: avatarProvider == null
-                              ? const Icon(
-                                  Icons.person,
-                                  color: Colors.grey,
-                                  size: 16,
-                                )
-                              : null,
-                        );
-                      },
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF262626),
-                          borderRadius: BorderRadius.circular(20),
+              Expanded(child: _buildBody(state)),
+
+              if (_replyToId != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  color: const Color(0xFF1E1E1E),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          "Replying to $_replyToName",
+                          style: const TextStyle(
+                            color: Colors.blueAccent,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        child: TextField(
-                          controller: _commentController,
-                          focusNode: _inputFocusNode,
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
-                          decoration: InputDecoration(
-                            hintText: _replyToId != null
-                                ? 'Write a reply...'
-                                : 'Add a comment...',
-                            hintStyle: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 14,
+                      ),
+                      const SizedBox(width: 8),
+                      GestureDetector(
+                        onTap: _cancelReply,
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.grey,
+                          size: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              SafeArea(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF181818),
+                    border: Border(top: BorderSide(color: Colors.grey[900]!)),
+                  ),
+                  child: Row(
+                    children: [
+                      Consumer(
+                        builder: (context, ref, _) {
+                          final profile = ref.watch(profileViewModelProvider).user;
+                          final avatarProvider = _getAvatarProvider(profile?.avatarUrl);
+
+                          return CircleAvatar(
+                            radius: 16,
+                            backgroundColor: const Color(0xFF262626),
+                            backgroundImage: avatarProvider,
+                            child: avatarProvider == null
+                                ? const Icon(
+                                    Icons.person,
+                                    color: Colors.grey,
+                                    size: 16,
+                                  )
+                                : null,
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF262626),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: TextField(
+                            controller: _commentController,
+                            focusNode: _inputFocusNode,
+                            style: const TextStyle(color: Colors.white, fontSize: 14),
+                            decoration: InputDecoration(
+                              hintText: _replyToId != null
+                                  ? 'Write a reply...'
+                                  : 'Add a comment...',
+                              hintStyle: TextStyle(
+                                color: Colors.grey[500],
+                                fontSize: 14,
+                              ),
+                              border: InputBorder.none,
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(vertical: 10),
                             ),
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 10),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton(
-                      onPressed: _sendComment,
-                      icon: const Icon(Icons.arrow_upward_rounded),
-                      color: Colors.blueAccent,
-                      iconSize: 22,
-                      constraints: const BoxConstraints(),
-                      padding: const EdgeInsets.all(8),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.blueAccent.withValues(alpha: 0.15),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: _sendComment,
+                        icon: const Icon(Icons.arrow_upward_rounded),
+                        color: Colors.blueAccent,
+                        iconSize: 22,
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(8),
+                        style: IconButton.styleFrom(
+                          backgroundColor: Colors.blueAccent.withValues(alpha: 0.15),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildBody(CommentsState state) {
-    if (state.isLoading) {
+    if (state.isLoading && state.commentsList.isEmpty) {
       return const Center(child: CircularProgressIndicator(color: Colors.blueAccent));
     }
 
-    if (state.status == CommentsStatus.error || state.commentsList.isEmpty) {
+    if (state.status == CommentsStatus.error && state.commentsList.isEmpty) {
+      return AppErrorView(
+        error: state.error,
+        onRetry: () => ref
+            .read(commentViewModelProvider.notifier)
+            .fetchComments(widget.postId),
+      );
+    }
+
+    if (state.commentsList.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -304,12 +337,16 @@ class _CommentsViewState extends ConsumerState<CommentsView> {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          comment.actorName ?? "Unknown",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                        Flexible(
+                          child: Text(
+                            comment.actorName ?? "Unknown",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 6),

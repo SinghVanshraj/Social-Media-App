@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:chewie/chewie.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:social_media_app/core/widgets/error_offline_widgets.dart';
 import 'package:video_player/video_player.dart';
 
 class FullScreenVideoPlayer extends StatefulWidget {
@@ -33,6 +34,10 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
   }
 
   Future<void> _initailizeVideo() async {
+    setState(() {
+      _error = null;
+      _isInitialized = false;
+    });
     try {
       _videoPlayerController = VideoPlayerController.networkUrl(
         Uri.parse(widget.mediaUrl),
@@ -56,13 +61,17 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
           backgroundColor: Colors.grey[900]!,
         ),
       );
-      setState(() {
-        _isInitialized = true;
-      });
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-      });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+        });
+      }
       log(e.toString());
     }
   }
@@ -75,24 +84,22 @@ class _FullScreenVideoPlayerState extends State<FullScreenVideoPlayer> {
         backgroundColor: Colors.black,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: Icon(Icons.close, color: Colors.white),
+          icon: const Icon(Icons.close, color: Colors.white),
         ),
       ),
       body: _error != null
-          ? Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, color: Colors.grey, size: 48),
-                const SizedBox(height: 12),
-                const Text(
-                  'Failed to load video',
-                  style: TextStyle(color: Colors.grey),
-                ),
-              ],
+          ? AppErrorView(
+              error: _error,
+              title: 'Video Error',
+              onRetry: _initailizeVideo,
             )
           : !_isInitialized
-          ? const CircularProgressIndicator(color: Colors.blueAccent)
-          : Chewie(controller: _chewieController!),
+              ? const Center(
+                  child: CircularProgressIndicator.adaptive(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blueAccent),
+                  ),
+                )
+              : Chewie(controller: _chewieController!),
     );
   }
 }

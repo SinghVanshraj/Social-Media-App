@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:social_media_app/core/widgets/error_offline_widgets.dart';
+import 'package:social_media_app/core/widgets/responsive_wrapper.dart';
 import 'package:social_media_app/feature/profile/profile_view.dart';
 import 'package:social_media_app/feature/search/search_state.dart';
 import 'package:social_media_app/feature/search/search_view_model.dart';
@@ -29,41 +31,47 @@ class _SearchViewState extends ConsumerState<SearchView> {
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Container(
-          height: 38,
-          decoration: BoxDecoration(
-            color: const Color(0xFF16181C),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          child: TextField(
-            style: const TextStyle(color: Colors.white, fontSize: 14),
-            onChanged: (query) =>
-                ref.read(searchViewModelProvider.notifier).search(query),
-            decoration: InputDecoration(
-              hintText: 'Search metrics, trends, handlers...',
-              hintStyle: TextStyle(color: Colors.grey[500], fontSize: 13),
-              suffixIcon: _controller.text.isNotEmpty
-                  ? GestureDetector(
-                      onTap: () {
-                        _controller.clear();
-                        ref
-                            .read(searchViewModelProvider.notifier)
-                            .clearSearch();
-                        setState(() {});
-                      },
-                      child: Icon(
-                        Icons.close,
-                        color: Colors.grey[500],
-                        size: 18,
-                      ),
-                    )
-                  : null,
-              border: InputBorder.none,
-              icon: Icon(
-                Icons.search_rounded,
-                color: Colors.grey[500],
-                size: 18,
+        title: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: Breakpoints.maxFeedWidth),
+            child: Container(
+              height: 38,
+              decoration: BoxDecoration(
+                color: const Color(0xFF16181C),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: TextField(
+                controller: _controller,
+                style: const TextStyle(color: Colors.white, fontSize: 14),
+                onChanged: (query) =>
+                    ref.read(searchViewModelProvider.notifier).search(query),
+                decoration: InputDecoration(
+                  hintText: 'Search metrics, trends, handles...',
+                  hintStyle: TextStyle(color: Colors.grey[500], fontSize: 13),
+                  suffixIcon: _controller.text.isNotEmpty
+                      ? GestureDetector(
+                          onTap: () {
+                            _controller.clear();
+                            ref
+                                .read(searchViewModelProvider.notifier)
+                                .clearSearch();
+                            setState(() {});
+                          },
+                          child: Icon(
+                            Icons.close,
+                            color: Colors.grey[500],
+                            size: 18,
+                          ),
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  icon: Icon(
+                    Icons.search_rounded,
+                    color: Colors.grey[500],
+                    size: 18,
+                  ),
+                ),
               ),
             ),
           ),
@@ -73,7 +81,10 @@ class _SearchViewState extends ConsumerState<SearchView> {
           child: Divider(color: Colors.grey[900]),
         ),
       ),
-      body: _buildBody(state),
+      body: ResponsiveContent(
+        maxWidth: Breakpoints.maxFeedWidth,
+        child: _buildBody(state),
+      ),
     );
   }
 
@@ -82,22 +93,53 @@ class _SearchViewState extends ConsumerState<SearchView> {
 
     if (state.isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: Colors.blueAccent),
-      );
-    }
-
-    if (state.status == SearchStatus.error) {
-      return Center(
-        child: Text(
-          state.error ?? 'Something went wrong',
-          style: const TextStyle(color: Colors.grey),
+        child: CircularProgressIndicator.adaptive(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.blueAccent),
         ),
       );
     }
 
+    if (state.status == SearchStatus.error) {
+      return AppErrorView(
+        error: state.error,
+        onRetry: () {
+          if (_controller.text.isNotEmpty) {
+            ref.read(searchViewModelProvider.notifier).search(_controller.text);
+          }
+        },
+      );
+    }
+
     if (state.users.isEmpty && state.posts.isEmpty) {
-      return const Center(
-        child: Text('No results found', style: TextStyle(color: Colors.grey)),
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.search_off_rounded,
+                size: 48,
+                color: Colors.grey[700],
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'No results found',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Try searching for different keywords or usernames.',
+                style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
       );
     }
 
